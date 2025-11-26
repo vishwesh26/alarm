@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WakeTask - Smart Alarm</title>
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --accent: #00D2D3;
+            --danger: #FF6B6B;
+            --dark-bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --glass: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrolling during alarm */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- Utility Classes --- */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Main Container --- */
+        #app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* --- Header / Clock --- */
+        header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        .current-time {
+            font-size: 4rem;
+            font-weight: 200;
+            letter-spacing: -2px;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .current-date {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-top: -0.5rem;
+        }
+
+        .streak-badge {
+            margin-top: 1rem;
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        /* --- Alarm List --- */
+        .alarm-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .alarm-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass);
+            border-radius: 16px;
+            padding: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .alarm-card:active {
+            transform: scale(0.98);
+        }
+
+        .alarm-info h2 {
+            font-size: 2rem;
+            font-weight: 500;
+        }
+
+        .alarm-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .task-icon { font-size: 1.2rem; }
+
+        /* --- Toggle Switch --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 1.2rem;
+            margin-left: 1rem;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        .delete-btn:hover { opacity: 1; }
+
+        /* --- FAB (Floating Action Button) --- */
+        .fab {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #0f172a;
+            box-shadow: 0 10px 25px rgba(0, 210, 211, 0.4);
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+        }
+
+        .fab:hover { transform: scale(1.1) rotate(90deg); }
+
+        /* --- Modal (Create Alarm) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: flex;
+            align-items: flex-end; /* Slide up from bottom */
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            width: 100%;
+            max-width: 480px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 2rem;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+        
+        label {
+            display: block;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="time"] {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 1rem;
+            font-size: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            outline: none;
+        }
+
+        select {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            appearance: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* --- Active Alarm Overlay (The Wake Up Screen) --- */
+        #alarm-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ef4444 0%, #7f1d1d 100%);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .bell-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-15deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .task-container {
+            background: white;
+            color: #0f172a;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .task-question {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 1.5rem 0;
+            color: #1e293b;
+        }
+
+        .task-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .task-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        /* Success Screen */
+        #success-overlay {
+            background: linear-gradient(135deg, #059669 0%, #064e3b 100%);
+        }
+        
+        .quote-box {
+            font-style: italic;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-top: 1rem;
+            opacity: 0.9;
+        }
+
+        .empty-state {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- Header -->
+        <header>
+            <div class="current-time" id="clock-display">00:00</div>
+            <div class="current-date" id="date-display">Mon, Jan 1</div>
+            <div class="streak-badge" id="streak-display">🔥 Streak: 0 days</div>
+        </header>
+
+        <!-- Alarm List -->
+        <div class="alarm-list" id="alarm-list">
+            <!-- Alarms injected here -->
+        </div>
+
+        <div class="empty-state" id="empty-state">
+            No alarms set.<br>Sleep well! 😴
+        </div>
+
+        <!-- FAB -->
+        <button class="fab" onclick="openModal()">+</button>
+    </div>
+
+    <!-- Create Alarm Modal -->
+    <div id="modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Alarm</h3>
+                <button class="btn-text" onclick="closeModal()">Cancel</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Wake Up Time</label>
+                <input type="time" id="new-alarm-time" required>
+            </div>
+
+            <div class="form-group">
+                <label>Wake Up Task</label>
+                <select id="new-alarm-task">
+                    <option value="math">🧮 Solve Math Problem</option>
+                    <option value="typing">🧠 Memory & Typing</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="saveAlarm()">Set Alarm</button>
+        </div>
+    </div>
+
+    <!-- Ringing Overlay -->
+    <div id="alarm-overlay" class="hidden">
+        <div class="bell-icon">🔔</div>
+        <h1 style="color:white; margin-bottom:20px;">WAKE UP!</h1>
+        
+        <div class="task-container">
+            <h3 style="color:#64748b; text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">Complete to Stop</h3>
+            <div id="task-question-display" class="task-question">...</div>
+            <input type="text" id="task-answer-input" class="task-input" placeholder="Type answer here" autocomplete="off">
+            <button class="btn-primary" onclick="checkAnswer()">Submit</button>
+            <p id="error-msg" style="color:#ef4444; margin-top:10px; font-weight:bold; height:20px;"></p>
+        </div>
+    </div>
+
+    <!-- Success Overlay -->
+    <div id="success-overlay" class="modal-overlay hidden" style="flex-direction: column; align-items: center; justify-content: center; text-align: center; color: white;">
+        <div style="font-size: 4rem;">☀️</div>
+        <h1>Good Morning!</h1>
+        <div style="padding: 2rem; max-width: 80%;">
+            <p class="quote-box" id="success-quote">"The future belongs to those who believe in the beauty of their dreams."</p>
+        </div>
+        <button style="background: white; color: #059669; padding: 1rem 3rem; border: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 2rem;" onclick="dismissSuccess()">Start Day</button>
+    </div>
+
+    <script>
+        /* --- State Management --- */
+        let alarms = JSON.parse(localStorage.getItem('waketask_alarms')) || [];
+        let streak = parseInt(localStorage.getItem('waketask_streak')) || 0;
+        let activeAlarm = null; 
+        let currentAnswer = null;
+        let audioContext = null;
+        let oscillator = null;
+        let gainNode = null;
+        let isRinging = false;
+
+        const quotes = [
+            "Your limitation—it's only your imagination.",
+            "Push yourself, because no one else is going to do it for you.",
+            "Great things never come from comfort zones.",
+            "Dream it. Wish it. Do it.",
+            "Success doesn't just find you. You have to go out and get it."
+        ];
+
+        /* --- DOM Elements --- */
+        const els = {
+            clock: document.getElementById('clock-display'),
+            date: document.getElementById('date-display'),
+            streak: document.getElementById('streak-display'),
+            list: document.getElementById('alarm-list'),
+            empty: document.getElementById('empty-state'),
+            modal: document.getElementById('modal'),
+            timeInput: document.getElementById('new-alarm-time'),
+            taskInput: document.getElementById('new-alarm-task'),
+            alarmOverlay: document.getElementById('alarm-overlay'),
+            questionDisplay: document.getElementById('task-question-display'),
+            answerInput: document.getElementById('task-answer-input'),
+            errorMsg: document.getElementById('error-msg'),
+            successOverlay: document.getElementById('success-overlay'),
+            successQuote: document.getElementById('success-quote')
+        };
+
+        /* --- Initialization --- */
+        function init() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            renderAlarms();
+            els.streak.textContent = `🔥 Streak: ${streak} days`;
+            
+            // Handle visibility change (tab switching)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) updateClock();
+            });
+        }
+
+        /* --- Audio System (Web Audio API) --- */
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function startAlarmSound() {
+            initAudio();
+            if (audioContext.state === 'suspended') audioContext.resume();
+
+            oscillator = audioContext.createOscillator();
+            gainNode = audioContext.createGain();
+
+            oscillator.type = 'square'; // Annoying sound
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+            
+            // Pulsing effect
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.exponentialRampToValueAtTime(1, now + 0.5);
+            
+            // Beeping pattern
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            
+            // Create a rhythmic beep
+            const beepInterval = setInterval(() => {
+                if(!isRinging) {
+                    clearInterval(beepInterval);
+                    return;
+                }
+                if(oscillator.frequency.value === 440) {
+                    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // High pitch
+                } else {
+                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // Low pitch
+                }
+            }, 500);
+        }
+
+        function stopAlarmSound() {
+            if (oscillator) {
+                try {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                } catch(e) {}
+                oscillator = null;
+            }
+        }
+
+        /* --- Clock & Alarm Checker --- */
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = now.getSeconds();
+            
+            els.clock.textContent = `${hours}:${minutes}`;
+            els.date.textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+            // Check Alarms (Only at 0 seconds to avoid multi-trigger)
+            if (seconds === 0 && !isRinging) {
+                checkAlarms(hours, minutes);
+            }
+        }
+
+        function checkAlarms(h, m) {
+            const timeStr = `${h}:${m}`;
+            const alarm = alarms.find(a => a.time === timeStr && a.enabled);
+            
+            if (alarm) {
+                triggerAlarm(alarm);
+            }
+        }
+
+        /* --- Alarm Trigger Logic --- */
+        function triggerAlarm(alarm) {
+            isRinging = true;
+            activeAlarm = alarm;
+            
+            // Generate Task
+            if (alarm.taskType === 'math') {
+                generateMathTask();
+            } else {
+                generateMemoryTask();
+            }
+
+            // Show UI
+            els.alarmOverlay.classList.remove('hidden');
+            els.answerInput.value = '';
+            els.answerInput.focus();
+            
+            // Start Sound
+            startAlarmSound();
+        }
+
+        /* --- Task Generators --- */
+        function generateMathTask() {
+            const operators = ['+', '-', '*'];
+            const op = operators[Math.floor(Math.random() * operators.length)];
+            let num1 = Math.floor(Math.random() * 20) + 5; // 5 to 25
+            let num2 = Math.floor(Math.random() * 10) + 1; // 1 to 10
+            
+            // Make division clean or avoid it for simplicity, using * instead of /
+            
+            if (op === '*') {
+                num1 = Math.floor(Math.random() * 12); 
+            }
+
+            let question = `${num1} ${op} ${num2}`;
+            // Add a third term sometimes
+            if (Math.random() > 0.5) {
+                const num3 = Math.floor(Math.random() * 10);
+                const op2 = Math.random() > 0.5 ? '+' : '-';
+                question = `(${question}) ${op2} ${num3}`;
+            }
+
+            currentAnswer = Math.round(eval(question)).toString(); // eval is safe here as we generate the string
+            els.questionDisplay.textContent = `${question} = ?`;
+        }
+
+        function generateMemoryTask() {
+            const words = ['WAKE', 'RISE', 'SHINE', 'COFFEE', 'SUN', 'ALARM', 'FAST', 'GOAL'];
+            const w1 = words[Math.floor(Math.random() * words.length)];
+            const w2 = words[Math.floor(Math.random() * words.length)];
+            const w3 = Math.floor(Math.random() * 1000);
+            
+            const target = `${w1}-${w2}-${w3}`;
+            els.questionDisplay.textContent = `Memorize: ${target}`;
+            els.questionDisplay.style.fontSize = "1.5rem";
+            
+            els.answerInput.disabled = true;
+            els.answerInput.placeholder = "Wait...";
+            
+            let timeLeft = 3;
+            const timer = setInterval(() => {
+                timeLeft--;
+                if(timeLeft <= 0) {
+                    clearInterval(timer);
+                    els.questionDisplay.textContent = "Type the code:";
+                    els.answerInput.disabled = false;
+                    els.answerInput.placeholder = "Type here";
+                    els.answerInput.focus();
+                }
+            }, 1000);
+
+            currentAnswer = target;
+        }
+
+        /* --- Interaction --- */
+        function checkAnswer() {
+            const userVal = els.answerInput.value.trim().toUpperCase(); // Case insensitive
+            
+            if (userVal === currentAnswer.toString().toUpperCase()) {
+                // Correct!
+                stopAlarmSound();
+                isRinging = false;
+                els.alarmOverlay.classList.add('hidden');
+                
+                // Disable the alarm that just rang (so it doesn't ring tomorrow unless re-enabled)
+                // Or keep it enabled? Standard is to keep enabled. Let's keep it enabled.
+                
+                showSuccess();
+            } else {
+                // Wrong
+                els.errorMsg.textContent = "Wrong! Try again.";
+                els.answerInput.value = '';
+                els.answerInput.classList.add('shake-anim');
+                setTimeout(() => {
+                    els.answerInput.classList.remove('shake-anim');
+                    els.errorMsg.textContent = "";
+                }, 1000);
+                
+                // If Math, generate new problem to prevent guessing?
+                // No, keep same to let them solve it.
+            }
+        }
+
+        // Allow Enter key to submit
+        els.answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+
+        function showSuccess() {
+            // Update Streak
+            streak++;
+            localStorage.setItem('waketask_streak', streak);
+            els.streak.textContent = `🔥 Streak: ${streak} days`;
+
+            // Quote
+            const q = quotes[Math.floor(Math.random() * quotes.length)];
+            els.successQuote.textContent = `"${q}"`;
+
+            els.successOverlay.classList.remove('hidden');
+        }
+
+        function dismissSuccess() {
+            els.successOverlay.classList.add('hidden');
+        }
+
+        /* --- CRUD Operations --- */
+        function saveAlarm() {
+            const time = els.timeInput.value;
+            const type = els.taskInput.value;
+            
+            if (!time) return alert("Please set a time");
+
+            const newAlarm = {
+                id: Date.now(),
+                time: time,
+                taskType: type,
+                enabled: true
+            };
+
+            alarms.push(newAlarm);
+            persist();
+            renderAlarms();
+            closeModal();
+            
+            // Init audio context on user interaction to ensure browser allows it later
+            initAudio();
+        }
+
+        function toggleAlarm(id) {
+            const idx = alarms.findIndex(a => a.id === id);
+            if (idx > -1) {
+                alarms[idx].enabled = !alarms[idx].enabled;
+                persist();
+                renderAlarms();
+            }
+        }
+
+        function deleteAlarm(id) {
+            alarms = alarms.filter(a => a.id !== id);
+            persist();
+            renderAlarms();
+        }
+
+        function persist() {
+            localStorage.setItem('waketask_alarms', JSON.stringify(alarms));
+        }
+
+        /* --- UI Rendering --- */
+        function renderAlarms() {
+            els.list.innerHTML = '';
+            
+            if (alarms.length === 0) {
+                els.empty.style.display = 'block';
+                return;
+            } else {
+                els.empty.style.display = 'none';
+            }
+
+            // Sort by time
+            alarms.sort((a, b) => a.time.localeCompare(b.time));
+
+            alarms.forEach(alarm => {
+                const el = document.createElement('div');
+                el.className = 'alarm-card fade-in';
+                
+                // Convert 24h to 12h for display
+                const [h, m] = alarm.time.split(':');
+                const d = new Date();
+                d.setHours(h);
+                d.setMinutes(m);
+                const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const icon = alarm.taskType === 'math' ? '🧮' : '🧠';
+
+                el.innerHTML = `
+                    <div class="alarm-info">
+                        <h2>${timeStr}</h2>
+                        <p><span class="task-icon">${icon}</span> ${alarm.taskType.toUpperCase()}</p>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <label class="switch">
+                            <input type="checkbox" ${alarm.enabled ? 'checked' : ''} onchange="toggleAlarm(${alarm.id})">
+                            <span class="slider"></span>
+                        </label>
+                        <button class="delete-btn" onclick="deleteAlarm(${alarm.id})">🗑</button>
+                    </div>
+                `;
+                els.list.appendChild(el);
+            });
+        }
+
+        /* --- Modal Logic --- */
+        function openModal() {
+            // Set default time to current time + 1 min for testing convenience
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 1);
+            const h = String(now.getHours()).padStart(2,'0');
+            const m = String(now.getMinutes()).padStart(2,'0');
+            els.timeInput.value = `${h}:${m}`;
+            
+            els.modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            els.modal.classList.add('hidden');
+        }
+
+        // Close modal if clicking outside
+        els.modal.addEventListener('click', (e) => {
+            if (e.target === els.modal) closeModal();
+        });
+
+        // Initialize App
+        init();
+
+    </script>
+</body>
+</html>
