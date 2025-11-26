@@ -229,7 +229,7 @@
         }
         @media(min-width: 480px) {
             .modal-overlay { align-items: center; }
-            .modal-content { border-radius: 24px !important; max-width: 400px; margin: 0 20px; }
+            .modal-content { border-radius: 24px !important; max-width: 450px; margin: 0 20px; }
         }
 
         .modal-content {
@@ -271,12 +271,12 @@
         }
 
         /* Custom Task Select */
-        .task-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .task-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .task-option {
             background: #0f172a;
             border: 1px solid #334155;
             color: var(--text-muted);
-            padding: 1rem;
+            padding: 1rem 0.5rem;
             border-radius: 12px;
             cursor: pointer;
             text-align: center;
@@ -291,7 +291,8 @@
             border-color: var(--primary);
             color: #a5b4fc;
         }
-        .task-option svg { width: 24px; height: 24px; }
+        .task-option svg { width: 24px; height: 24px; margin-bottom: 5px; }
+        .task-option span { font-size: 0.8rem; }
 
         /* Volume Slider */
         input[type="range"] {
@@ -354,6 +355,7 @@
             width: 100%;
             max-width: 350px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
         .task-question { font-size: 2rem; font-weight: 700; margin: 1.5rem 0; color: #1e293b; font-family: monospace;}
@@ -368,8 +370,45 @@
             margin-bottom: 1rem;
         }
         .task-input:focus { border-color: var(--primary); outline: none; }
-        
         .task-input.error { border-color: var(--danger); background: #fef2f2; }
+
+        /* Stroop Styles */
+        .stroop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 1rem;
+        }
+        .stroop-btn {
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stroop-btn:active { transform: scale(0.95); }
+
+        /* Shake Styles */
+        .shake-progress-container {
+            width: 100%;
+            height: 24px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+            border: 1px solid #cbd5e1;
+        }
+        .shake-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #14b8a6, #0d9488);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        .shake-icon { font-size: 3rem; animation: shake 1s infinite; margin-bottom: 10px; display: block; }
 
         /* --- Success Overlay --- */
         #success-overlay {
@@ -397,15 +436,13 @@
             <div class="current-time" id="clock-display">00:00</div>
             <div class="current-date" id="date-display">...</div>
             <div class="streak-badge" id="streak-display">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-top:-2px;"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
                 Streak: 0 days
             </div>
         </header>
 
         <!-- Alarm List -->
-        <div class="alarm-list" id="alarm-list">
-            <!-- Alarms will be injected here via JS -->
-        </div>
+        <div class="alarm-list" id="alarm-list"></div>
 
         <div id="empty-state" style="text-align: center; color: var(--text-muted); margin-top: 3rem; display: none;">
             <p style="font-size: 1.2rem;">No alarms set.</p>
@@ -440,9 +477,13 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
                         <span>Math</span>
                     </div>
-                    <div class="task-option" onclick="selectTask('typing')" id="opt-typing">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.97-1.364"/><path d="M19.97 16.636A4 4 0 0 1 18 18"/></svg>
-                        <span>Memory</span>
+                    <div class="task-option" onclick="selectTask('stroop')" id="opt-stroop">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                        <span>Color Test</span>
+                    </div>
+                    <div class="task-option" onclick="selectTask('shake')" id="opt-shake">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                        <span>Shake</span>
                     </div>
                 </div>
             </div>
@@ -464,12 +505,8 @@
         <div class="bell-icon">🔔</div>
         <h1 style="color:white; margin-bottom:20px; font-size: 3rem;">WAKE UP!</h1>
         
-        <div class="task-container">
-            <h3 style="color:#64748b; text-transform:uppercase; font-size:0.8rem; letter-spacing:1px; font-weight:700;">Complete to Stop</h3>
-            <div id="task-question" class="task-question">...</div>
-            <input type="text" id="task-input" class="task-input" placeholder="Type answer here" autocomplete="off">
-            <button class="btn-primary" onclick="checkAnswer()">Submit</button>
-        </div>
+        <!-- Task Container (Content Injected via JS) -->
+        <div id="task-container" class="task-container"></div>
     </div>
 
     <!-- Success Overlay -->
@@ -492,15 +529,19 @@
         let selectedTaskType = 'math';
         
         let activeAlarm = null;
-        let currentAnswer = null;
+        let currentMathAnswer = null;
+        let currentStroopAnswer = null; // color string
         
+        // Shake State
+        let shakeProgress = 0;
+        let shakeHandler = null;
+
         // Audio
         let audioCtx = null;
         let oscillator = null;
         let gainNode = null;
         let beepInterval = null;
 
-        // --- Quotes ---
         const quotes = [
             "Your limitation—it's only your imagination.",
             "Push yourself, because no one else is going to do it for you.",
@@ -523,36 +564,36 @@
             volDisp: document.getElementById('vol-display'),
             btnSave: document.getElementById('btn-save'),
             overlay: document.getElementById('alarm-overlay'),
-            question: document.getElementById('task-question'),
-            answerInp: document.getElementById('task-input'),
+            taskContainer: document.getElementById('task-container'),
             success: document.getElementById('success-overlay'),
             quote: document.getElementById('success-quote'),
             optMath: document.getElementById('opt-math'),
-            optType: document.getElementById('opt-typing')
+            optStroop: document.getElementById('opt-stroop'),
+            optShake: document.getElementById('opt-shake')
         };
 
         // --- Initialization ---
         function init() {
             renderAlarms();
             updateClock();
+            updateStreakUI();
+            setInterval(updateClock, 1000);
+        }
+
+        function updateStreakUI() {
             els.streak.innerHTML = `
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-top:-2px;"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
                 Streak: ${streak} days
             `;
-            setInterval(updateClock, 1000);
         }
 
         function updateClock() {
             const now = new Date();
-            // Clock
             const h = String(now.getHours()).padStart(2,'0');
             const m = String(now.getMinutes()).padStart(2,'0');
             els.clock.textContent = `${h}:${m}`;
-            
-            // Date
             els.date.textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-            // Check Alarm (at 00 seconds)
             if (now.getSeconds() === 0 && !activeAlarm) {
                 const timeStr = `${h}:${m}`;
                 const match = alarms.find(a => a.time === timeStr && a.enabled);
@@ -569,22 +610,18 @@
         function playSound(volPercent) {
             initAudio();
             const maxGain = volPercent / 100;
-            
             oscillator = audioCtx.createOscillator();
             gainNode = audioCtx.createGain();
             
             oscillator.type = 'square';
             oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
-            
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             
-            // Ramp volume
             gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(Math.max(0.01, maxGain), audioCtx.currentTime + 0.5);
 
             oscillator.start();
-            
             let isHigh = false;
             beepInterval = setInterval(() => {
                 if(!oscillator) return;
@@ -603,101 +640,218 @@
                 clearInterval(beepInterval);
                 beepInterval = null;
             }
+            // Cleanup shake
+            if (shakeHandler) {
+                window.removeEventListener('devicemotion', shakeHandler);
+                shakeHandler = null;
+            }
         }
 
-        // --- Alarm Logic ---
+        // --- Alarm & Tasks ---
         function triggerAlarm(alarm) {
             activeAlarm = alarm;
             els.overlay.classList.remove('hidden');
+            playSound(alarm.volume || 100);
+
+            // Render specific task UI
+            els.taskContainer.innerHTML = ''; // clear previous
             
             if (alarm.taskType === 'math') {
-                generateMath();
-            } else {
-                generateMemory();
+                renderMathTask();
+            } else if (alarm.taskType === 'stroop') {
+                renderStroopTask();
+            } else if (alarm.taskType === 'shake') {
+                renderShakeTask();
             }
-            
-            // Play sound with alarm's specific volume (default 100)
-            playSound(alarm.volume || 100);
         }
 
-        function generateMath() {
+        function completeTask() {
+            stopSound();
+            activeAlarm = null;
+            els.overlay.classList.add('hidden');
+            streak++;
+            localStorage.setItem('waketask_streak', streak);
+            updateStreakUI();
+            els.quote.textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+            els.success.classList.remove('hidden');
+        }
+
+        // 1. Math Task
+        function renderMathTask() {
             const ops = ['+', '-', '*'];
             const op = ops[Math.floor(Math.random() * ops.length)];
             let n1 = Math.floor(Math.random() * 20) + 5;
             let n2 = Math.floor(Math.random() * 10) + 1;
-            
             if(op === '*') n1 = Math.floor(Math.random() * 12);
 
             let ans = 0;
-            if(op === '+') ans = n1 + n2;
-            else if(op === '-') ans = n1 - n2;
-            else if(op === '*') ans = n1 * n2;
+            if(op === '+') ans = n1 + n2; else if(op === '-') ans = n1 - n2; else if(op === '*') ans = n1 * n2;
+            currentMathAnswer = ans.toString();
 
-            els.question.textContent = `${n1} ${op} ${n2} = ?`;
-            currentAnswer = ans.toString();
+            els.taskContainer.innerHTML = `
+                <h3 style="color:#64748b; text-transform:uppercase; font-size:0.8rem; letter-spacing:1px; font-weight:700;">Complete to Stop</h3>
+                <div class="task-question">${n1} ${op} ${n2} = ?</div>
+                <input type="number" id="math-input" class="task-input" placeholder="?" autocomplete="off">
+                <button class="btn-primary" onclick="checkMath()">Submit</button>
+            `;
+            
+            // Focus logic
+            setTimeout(() => document.getElementById('math-input').focus(), 100);
+            document.getElementById('math-input').addEventListener('keyup', (e) => {
+                if(e.key === 'Enter') checkMath();
+            });
         }
 
-        function generateMemory() {
-            const words = ['WAKE', 'RISE', 'SHINE', 'FAST', 'GOAL', 'CODE'];
-            const w1 = words[Math.floor(Math.random() * words.length)];
-            const w2 = Math.floor(Math.random() * 999);
-            const target = `${w1}-${w2}`;
-            
-            els.question.textContent = `Memorize: ${target}`;
-            currentAnswer = target;
-            
-            els.answerInp.disabled = true;
-            els.answerInp.placeholder = "Wait 15s...";
-            
-            // 15 Second Timer
-            setTimeout(() => {
-                els.question.textContent = "Type the code:";
-                els.answerInp.disabled = false;
-                els.answerInp.placeholder = "Type answer here";
-                els.answerInp.focus();
-            }, 15000);
-        }
-
-        function checkAnswer() {
-            const val = els.answerInp.value.trim().toUpperCase();
-            if (val === currentAnswer.toString().toUpperCase()) {
-                // Success
-                stopSound();
-                activeAlarm = null;
-                els.overlay.classList.add('hidden');
-                els.answerInp.value = '';
-                els.answerInp.disabled = false; // Reset for next time
-                
-                streak++;
-                localStorage.setItem('waketask_streak', streak);
-                els.streak.textContent = `Streak: ${streak} days`; // Simple text update, SVG implies
-                
-                // Show Success Screen
-                els.quote.textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
-                els.success.classList.remove('hidden');
+        function checkMath() {
+            const inp = document.getElementById('math-input');
+            if (inp.value.trim() === currentMathAnswer) {
+                completeTask();
             } else {
-                // Fail
-                els.answerInp.classList.add('shake-anim');
-                els.answerInp.classList.add('error');
-                setTimeout(() => {
-                    els.answerInp.classList.remove('shake-anim');
-                    els.answerInp.classList.remove('error');
-                }, 500);
-                els.answerInp.value = '';
+                inp.classList.add('error');
+                inp.value = '';
+                setTimeout(() => inp.classList.remove('error'), 500);
             }
         }
-        
-        // Enter key support
-        els.answerInp.addEventListener('keyup', (e) => {
-            if(e.key === 'Enter') checkAnswer();
-        });
 
-        function dismissSuccess() {
-            els.success.classList.add('hidden');
-            init(); // Re-render streak
+        // 2. Stroop Task
+        function renderStroopTask() {
+            const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+            const colorMap = {
+                'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 
+                'yellow': '#eab308', 'purple': '#a855f7', 'orange': '#f97316'
+            };
+            
+            // Pick word and ink
+            const wordIdx = Math.floor(Math.random() * colors.length);
+            let inkIdx = Math.floor(Math.random() * colors.length);
+            // Ensure ink is different from word for challenge
+            while(inkIdx === wordIdx) { inkIdx = Math.floor(Math.random() * colors.length); }
+
+            const wordText = colors[wordIdx].toUpperCase();
+            const inkColor = colors[inkIdx];
+            currentStroopAnswer = inkColor; // The correct answer is the INK COLOR
+
+            // Pick 4 options including correct one
+            let options = [inkColor];
+            while(options.length < 4) {
+                const c = colors[Math.floor(Math.random() * colors.length)];
+                if(!options.includes(c)) options.push(c);
+            }
+            options.sort(() => Math.random() - 0.5); // Shuffle
+
+            let btnsHtml = options.map(c => 
+                `<button class="stroop-btn" style="background:${colorMap[c]}" onclick="checkStroop('${c}')">${c}</button>`
+            ).join('');
+
+            els.taskContainer.innerHTML = `
+                <h3 style="color:#64748b; font-weight:700;">TAP THE <span style="text-decoration:underline;">COLOR</span>, NOT WORD</h3>
+                <div class="task-question" style="color:${colorMap[inkColor]}; font-size:3.5rem;">${wordText}</div>
+                <div class="stroop-grid">${btnsHtml}</div>
+            `;
         }
 
-        // --- CRUD / UI ---
+        function checkStroop(color) {
+            if (color === currentStroopAnswer) {
+                completeTask();
+            } else {
+                // Wrong: Generate new Stroop to discourage guessing
+                const q = document.querySelector('.task-question');
+                q.classList.add('shake-anim');
+                setTimeout(() => {
+                    q.classList.remove('shake-anim');
+                    renderStroopTask(); // Refresh
+                }, 400);
+            }
+        }
+
+        // 3. Shake Task
+        function renderShakeTask() {
+            shakeProgress = 0;
+            els.taskContainer.innerHTML = `
+                <div style="text-align:center;">
+                    <div class="shake-icon">📳</div>
+                    <h3 style="color:#64748b; font-weight:700;">SHAKE PHONE VIGOROUSLY</h3>
+                    <div class="shake-progress-container">
+                        <div id="shake-bar" class="shake-bar"></div>
+                    </div>
+                    <button id="perm-btn" class="btn-primary hidden" onclick="requestShakePerm()">Enable Sensor</button>
+                    <p style="color:#94a3b8; font-size:0.9rem; margin-top:10px;">Keep shaking to fill the bar!</p>
+                </div>
+            `;
+
+            // Check iOS 13+ permission requirement
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                document.getElementById('perm-btn').classList.remove('hidden');
+                document.querySelector('.shake-icon').style.display = 'none'; // hide animation until started
+            } else {
+                startShakeDetection();
+            }
+        }
+
+        function requestShakePerm() {
+            DeviceMotionEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        document.getElementById('perm-btn').classList.add('hidden');
+                        document.querySelector('.shake-icon').style.display = 'block';
+                        startShakeDetection();
+                    } else {
+                        alert("Permission needed to stop alarm!");
+                    }
+                })
+                .catch(console.error);
+        }
+
+        function startShakeDetection() {
+            let lastX = 0, lastY = 0, lastZ = 0;
+            let lastUpdate = 0;
+
+            shakeHandler = (event) => {
+                const current = event.accelerationIncludingGravity;
+                if(!current) return;
+
+                const curTime = Date.now();
+                if ((curTime - lastUpdate) > 100) {
+                    const diffTime = curTime - lastUpdate;
+                    lastUpdate = curTime;
+
+                    const speed = Math.abs(current.x + current.y + current.z - lastX - lastY - lastZ) / diffTime * 10000;
+
+                    if (speed > 300) { // Threshold
+                        shakeProgress += 4; // Increment
+                        if(shakeProgress > 100) shakeProgress = 100;
+                        document.getElementById('shake-bar').style.width = shakeProgress + '%';
+                        
+                        if (shakeProgress >= 100) {
+                            window.removeEventListener('devicemotion', shakeHandler);
+                            completeTask();
+                        }
+                    } else {
+                        // Decay if not shaking
+                        if(shakeProgress > 0) shakeProgress -= 0.5;
+                        document.getElementById('shake-bar').style.width = shakeProgress + '%';
+                    }
+
+                    lastX = current.x;
+                    lastY = current.y;
+                    lastZ = current.z;
+                }
+            };
+            window.addEventListener('devicemotion', shakeHandler);
+        }
+
+
+        // --- UI & CRUD ---
+        function selectTask(type) {
+            selectedTaskType = type;
+            // Reset
+            [els.optMath, els.optStroop, els.optShake].forEach(el => el.classList.remove('selected'));
+            // Set
+            if(type === 'math') els.optMath.classList.add('selected');
+            if(type === 'stroop') els.optStroop.classList.add('selected');
+            if(type === 'shake') els.optShake.classList.add('selected');
+        }
+
         function renderAlarms() {
             els.list.innerHTML = '';
             if (alarms.length === 0) {
@@ -705,30 +859,29 @@
                 return;
             }
             els.empty.style.display = 'none';
-
-            // Sort
             alarms.sort((a,b) => a.time.localeCompare(b.time));
 
             alarms.forEach(alarm => {
                 const div = document.createElement('div');
                 div.className = 'alarm-card fade-in';
                 
-                // Friendly Time
                 const [h, m] = alarm.time.split(':');
                 const d = new Date(); d.setHours(h); d.setMinutes(m);
                 const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                // Icons logic
+                let iconSvg = '';
+                if(alarm.taskType === 'math') iconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>';
+                else if(alarm.taskType === 'stroop') iconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/></svg>';
+                else if(alarm.taskType === 'shake') iconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>';
 
                 div.innerHTML = `
                     <div class="alarm-info">
                         <h2>${timeStr}</h2>
                         <div class="alarm-details">
-                            ${alarm.taskType === 'math' 
-                                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>' 
-                                : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.97-1.364"/><path d="M19.97 16.636A4 4 0 0 1 18 18"/></svg>'
-                            }
-                            <span>${alarm.taskType}</span>
+                            ${iconSvg}
+                            <span>${alarm.taskType.toUpperCase()}</span>
                             <span style="opacity:0.5">|</span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
                             <span>${alarm.volume || 100}%</span>
                         </div>
                     </div>
@@ -749,71 +902,35 @@
             });
         }
 
-        // --- Modal & Form ---
+        // --- Standard CRUD/Modal Functions (Unchanged Logic) ---
         function openModal() {
             editingId = null;
             els.modalTitle.textContent = "Add Alarm";
             els.btnSave.textContent = "Set Alarm";
-            
-            // Set default time to now+1 min
             const now = new Date(); now.setMinutes(now.getMinutes()+1);
-            const h = String(now.getHours()).padStart(2,'0');
-            const m = String(now.getMinutes()).padStart(2,'0');
-            els.inpTime.value = `${h}:${m}`;
-            
-            // Default settings
+            els.inpTime.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             selectTask('math');
-            els.inpVol.value = 100;
-            updateVolDisplay(100);
-            
+            els.inpVol.value = 100; updateVolDisplay(100);
             els.modal.classList.remove('hidden');
         }
 
         function editAlarm(id) {
             const alarm = alarms.find(a => a.id === id);
             if (!alarm) return;
-            
             editingId = id;
             els.modalTitle.textContent = "Edit Alarm";
             els.btnSave.textContent = "Save Changes";
-            
             els.inpTime.value = alarm.time;
             selectTask(alarm.taskType);
-            
-            const vol = alarm.volume || 100;
-            els.inpVol.value = vol;
-            updateVolDisplay(vol);
-            
+            els.inpVol.value = alarm.volume || 100; updateVolDisplay(alarm.volume || 100);
             els.modal.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            els.modal.classList.add('hidden');
-        }
-
-        function selectTask(type) {
-            selectedTaskType = type;
-            if(type === 'math') {
-                els.optMath.classList.add('selected');
-                els.optType.classList.remove('selected');
-            } else {
-                els.optMath.classList.remove('selected');
-                els.optType.classList.add('selected');
-            }
-        }
-
-        function updateVolDisplay(val) {
-            els.volDisp.textContent = val + "%";
         }
 
         function saveAlarm() {
             const time = els.inpTime.value;
             if(!time) return;
-
             const vol = parseInt(els.inpVol.value);
-
             if (editingId) {
-                // Update
                 const idx = alarms.findIndex(a => a.id === editingId);
                 if (idx !== -1) {
                     alarms[idx].time = time;
@@ -821,29 +938,20 @@
                     alarms[idx].volume = vol;
                 }
             } else {
-                // Create
-                alarms.push({
-                    id: Date.now(),
-                    time: time,
-                    taskType: selectedTaskType,
-                    volume: vol,
-                    enabled: true
-                });
+                alarms.push({ id: Date.now(), time: time, taskType: selectedTaskType, volume: vol, enabled: true });
             }
-
             localStorage.setItem('waketask_alarms', JSON.stringify(alarms));
             renderAlarms();
             closeModal();
-            initAudio(); // Trigger audio context to ensure permission
+            initAudio();
         }
 
         function deleteAlarm(id) {
-            if(!confirm('Delete this alarm?')) return;
+            if(!confirm('Delete?')) return;
             alarms = alarms.filter(a => a.id !== id);
             localStorage.setItem('waketask_alarms', JSON.stringify(alarms));
             renderAlarms();
         }
-
         function toggleAlarm(id) {
             const idx = alarms.findIndex(a => a.id === id);
             if (idx !== -1) {
@@ -852,15 +960,12 @@
                 renderAlarms();
             }
         }
+        function closeModal() { els.modal.classList.add('hidden'); }
+        function updateVolDisplay(val) { els.volDisp.textContent = val + "%"; }
+        function dismissSuccess() { els.success.classList.add('hidden'); init(); }
+        els.modal.addEventListener('click', (e) => { if (e.target === els.modal) closeModal(); });
 
-        // Close modal on outside click
-        els.modal.addEventListener('click', (e) => {
-            if (e.target === els.modal) closeModal();
-        });
-
-        // Start
         init();
-
     </script>
 </body>
 </html>
